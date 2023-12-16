@@ -43,7 +43,7 @@ results = ldapobj.search_s(os.environ.get('LDAP_BASE_DN'),
 proxmox = proxmoxer.ProxmoxAPI(
     os.environ.get('PVE_HOST'),
     user=os.environ.get('PVE_USER'),
-    password=os.environ.get('LDAP_PASS'),
+    password=os.environ.get('PVE_PASS'),
     verify_ssl=ca_bundle_path if ca_bundle_path else False)
 
 proxmox_openid_users = [user['userid'] for user in proxmox.access.users.get() if user['realm-type'] == "openid"]
