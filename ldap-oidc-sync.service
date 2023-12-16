@@ -1,0 +1,11 @@
+[Unit]
+Description=Sync LDAP/OIDC Users for Proxmox
+After=network.target
+Wants=ldap-oidc-sync.timer
+
+[Service]
+Type=oneshot
+User=sys_ldap_user_sync
+WorkingDirectory=/home/sys_ldap_user_sync/proxmox-oidc-ldap-sync
+ExecStart=/home/sys_ldap_user_sync/proxmox-oidc-ldap-sync/.venv/bin/python sync.py
+Restart=on-failure
