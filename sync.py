@@ -15,13 +15,10 @@ if not os.environ.get("PVE_DEST_REALM"):
 
 dest_realm = os.environ.get("PVE_DEST_REALM")
 
-# get CA bundle path
-if os.environ.get("CA_BUNDLE"):
-    ca_bundle_path = Path(os.environ.get("CA_BUNDLE")).resolve()
-
 # do ldap query
 try:
-    if ca_bundle_path:
+    if os.environ.get("CA_BUNDLE"):
+        ca_bundle_path = Path(os.environ.get("CA_BUNDLE")).resolve()
         ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, str(ca_bundle_path))
     elif os.environ.get("TLS_VERIFY", True):
         ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -84,10 +81,7 @@ for result in results:
         user_dn, params = user_result
         user = f"{user_dn.split(',')[0].split('=')[1]}@{dest_realm}"
         if user not in user_group_assoc:
-            user_group_assoc[user] = dict(
-                groups = [groupid],
-                params = params
-            )
+            user_group_assoc[user] = dict(groups=[groupid], params=params)
         else:
             user_group_assoc[user]["groups"].append(groupid)
 
@@ -104,13 +98,15 @@ for user, attributes in user_group_assoc.items():
     params: dict = attributes["params"]
 
     user_attributes = dict(
-        firstname = params.get("givenName", ""),
-        lastname = params.get("sn", ""),
-        comment = params.get("displayName", "")
+        firstname=params.get("givenName", ""),
+        lastname=params.get("sn", ""),
+        comment=params.get("displayName", ""),
     )
     if user not in proxmox_openid_users:
         logging.info("Creating user: %s with groups: %s", user, groups)
-        proxmox.access.users.post(userid=user, enable=1, groups=groups, **user_attributes)
+        proxmox.access.users.post(
+            userid=user, enable=1, groups=groups, **user_attributes
+        )
     else:
         logging.info("Syncing user groups for user: %s with groups: %s", user, groups)
         proxmox.access.users(user).put(groups=groups)
