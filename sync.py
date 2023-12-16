@@ -77,16 +77,19 @@ for result in results:
         os.environ.get("LDAP_BASE_DN"),
         ldap.SCOPE_SUBTREE,
         f"(&(objectClass=person)(memberOf={group_dn}))",
-        ["dn"],
+        ["dn", "displayName", "givenName", "sn"],
     )
 
-    user_members = [user_dn[0] for user_dn in user_member_query_result]
-    for user_dn in user_members:
+    for user_result in user_member_query_result:
+        user_dn, params = user_result
         user = f"{user_dn.split(',')[0].split('=')[1]}@{dest_realm}"
         if user not in user_group_assoc:
-            user_group_assoc[user] = [groupid]
+            user_group_assoc[user] = dict(
+                groups = [groupid],
+                params = params
+            )
         else:
-            user_group_assoc[user].append(groupid)
+            user_group_assoc[user]["groups"].append(groupid)
 
 # create groups
 for group in groups_to_create:
@@ -96,10 +99,18 @@ for group in groups_to_create:
     )
 
 # map users
-for user, groups in user_group_assoc.items():
+for user, attributes in user_group_assoc.items():
+    groups: list = attributes["groups"]
+    params: dict = attributes["params"]
+
+    user_attributes = dict(
+        firstname = params.get("givenName", ""),
+        lastname = params.get("sn", ""),
+        comment = params.get("displayName", "")
+    )
     if user not in proxmox_openid_users:
         logging.info("Creating user: %s with groups: %s", user, groups)
-        proxmox.access.users.post(userid=user, enable=1, groups=groups)
+        proxmox.access.users.post(userid=user, enable=1, groups=groups, **user_attributes)
     else:
         logging.info("Syncing user groups for user: %s with groups: %s", user, groups)
         proxmox.access.users(user).put(groups=groups)
