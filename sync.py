@@ -23,7 +23,7 @@ if (os.environ.get('CA_BUNDLE')):
 try:
     if ca_bundle_path:
         ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, str(ca_bundle_path))
-    else:
+    elif os.environ.get('TLS_VERIFY', True):
         ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldapobj = ldap.initialize(os.environ.get('LDAP_URI'))
     ldapobj.simple_bind_s(os.environ.get('LDAP_USER'), os.environ.get('LDAP_PASS'))
